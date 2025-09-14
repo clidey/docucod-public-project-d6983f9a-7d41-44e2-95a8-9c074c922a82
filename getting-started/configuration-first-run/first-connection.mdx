@@ -1,0 +1,191 @@
+---
+title: "First Database Connection"
+description: "Shows users how to connect to a MySQL database with GORM for the first time. Provides copy-paste code examples to help users achieve a successful connection quickly, clarifying where to substitute their own DB info and credentials."
+---
+
+# First Database Connection with GORM MySQL Driver
+
+Welcome to the first crucial step in using the GORM MySQL Driver: **connecting your Go application to a MySQL database**. This guide walks you through the essential steps with clear, copy-paste ready examples to help you get a verified connection instantly. You will learn how to substitute your own database credentials, understand the key parts of the connection string (DSN), and verify a successful connection.
+
+---
+
+## 1. Prepare Your Environment
+
+Before connecting, ensure that you have:
+
+- A running MySQL server accessible from your Go application environment
+- Database user credentials with proper privileges
+- Network connectivity between your app and the MySQL server
+- Installed the GORM MySQL driver module (`gorm.io/driver/mysql`) and GORM core (`gorm.io/gorm`)
+
+
+## 2. Constructing Your Data Source Name (DSN)
+
+The DSN is a critical string that contains the necessary information for MySQL connection. Its general format is:
+
+```plaintext
+username:password@protocol(address)/dbname?param1=value1&param2=value2
+```
+
+Typical example:
+
+```plaintext
+gorm:gorm@tcp(localhost:9910)/gorm?charset=utf8&parseTime=True&loc=Local
+```
+
+Breakdown:
+
+- `gorm:gorm` — username and password
+- `tcp(localhost:9910)` — network protocol and server address with port
+- `/gorm` — database name
+- Query parameters like `charset`, `parseTime`, and `loc` configure connection details
+
+**Tip:** Refer to the official DSN syntax detailed in the [go-sql-driver/mysql documentation](https://github.com/go-sql-driver/mysql#dsn-data-source-name) for advanced options.
+
+
+## 3. Import Required Packages
+
+Start by importing the GORM core and the MySQL driver packages in your Go code:
+
+```go
+import (
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+```
+
+
+## 4. Open the Database Connection
+
+Use the `mysql.Open` method to specify your DSN, and then open the GORM connection as shown:
+
+```go
+func main() {
+  dsn := "gorm:gorm@tcp(localhost:9910)/gorm?charset=utf8&parseTime=True&loc=Local" // Replace with your DB credentials
+
+  db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+  if err != nil {
+    panic("failed to connect database: " + err.Error())
+  }
+
+  // Connection successful
+  fmt.Println("Successfully connected to the MySQL database!")
+}
+```
+
+### Key Notes:
+- Replace `gorm:gorm@tcp(localhost:9910)/gorm` with your own `username:password@network(address)/database`.
+- Maintain query parameters like `parseTime=True` to ensure time values are parsed correctly.
+- Handle errors gracefully to catch connection issues early.
+
+
+## 5. Verify Connection
+
+Once the `gorm.Open` call returns without error, you have an active GORM DB session.
+
+For an extra layer of verification, you can ping the database:
+
+```go
+sqlDB, err := db.DB()
+if err != nil {
+  panic("failed to get raw DB: " + err.Error())
+}
+
+err = sqlDB.Ping()
+if err != nil {
+  panic("failed to ping database: " + err.Error())
+}
+
+fmt.Println("Database ping successful!")
+```
+
+
+## 6. Example: Full Minimal Program
+
+Here is a minimal but complete example you can run after replacing the DSN:
+
+```go
+package main
+
+import (
+  "fmt"
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+
+func main() {
+  dsn := "username:password@tcp(host:3306)/database?charset=utf8&parseTime=True&loc=Local"
+
+  db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+  if err != nil {
+    panic("failed to connect to database: " + err.Error())
+  }
+
+  sqlDB, err := db.DB()
+  if err != nil {
+    panic("failed to get database object: " + err.Error())
+  }
+
+  if err = sqlDB.Ping(); err != nil {
+    panic("database ping failed: " + err.Error())
+  }
+
+  fmt.Println("Connected and verified successfully!")
+}
+```
+
+
+## 7. Troubleshooting Connection Issues
+
+<AccordionGroup title="Common Connection Issues and Solutions">
+<Accordion title="Incorrect DSN format or credentials">
+- Verify username, password, host, port, and database name correctness.
+- Use the official DSN syntax reference for formatting.
+- Ensure no extra spaces or illegal characters.
+</Accordion>
+<Accordion title="MySQL server not reachable">
+- Check if the MySQL server is running.
+- Validate that network and firewall settings allow traffic on the port.
+- Confirm the address and port in DSN match your server.
+</Accordion>
+<Accordion title="Insufficient privileges">
+- Ensure the user has appropriate permissions to connect and operate.
+- Use `SHOW GRANTS FOR 'user'@'host';` directly on the MySQL server.
+</Accordion>
+<Accordion title="Time parsing failed or incorrect timezone">
+- Use the `parseTime=True` in your DSN query string.
+- Match `loc=Local` or appropriate timezone to your environment.
+</Accordion>
+</AccordionGroup>
+
+<Tip>
+If you experience connection timeout, try increasing your MySQL server’s `wait_timeout` or adjust Go’s database/sql connection pool settings.
+</Tip>
+
+
+## 8. Next Steps
+
+- After connecting, explore [Basic Configuration](../configuration-first-run/basic-configuration) to tailor driver behavior.
+- Learn how to [use customized MySQL drivers](../configuration-first-run/custom-driver-usage) if you require advanced setups.
+- Consult [Troubleshooting & Common Issues](../configuration-first-run/troubleshooting) for more detailed assistance.
+
+
+---
+
+## References & Related Documentation
+
+- [Prerequisites](../prerequisites-installation/prerequisites): Verify system requirements before connection.
+- [Installation](../prerequisites-installation/installation): Instructions to install the driver with Go modules.
+- [Basic Configuration](../configuration-first-run/basic-configuration): DSN parameters and compatibility flags explained.
+- [Error Translator](../../error_translator.go): Understand how MySQL errors are translated to GORM errors.
+- [Feature Highlights](../../overview/features-architecture-integration/feature-highlights): For deeper understanding of capabilities.
+
+
+<Check>
+Make sure your MySQL server version is compatible (MySQL 5.6+, MariaDB, TiDB) for best experience with this driver.
+</Check>
+
+---
+
+Welcome again to GORM's MySQL integration. With this connection established, you are ready to explore schema management, querying, and migrations using GORM's powerful features.
+
