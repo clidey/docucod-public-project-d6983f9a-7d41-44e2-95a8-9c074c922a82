@@ -1,0 +1,128 @@
+---
+title: "Value Proposition & Use Cases"
+description: "Highlights the primary use cases and the types of users who benefit most from this driver, such as Go developers integrating MySQL with GORM. Explains when and why to choose this driver, including typical project and deployment scenarios."
+---
+
+# Value Proposition & Use Cases
+
+## Unlock the Full Potential of MySQL with GORM's MySQL Driver
+
+Designed specifically for Go developers using the GORM ORM, the GORM MySQL Driver offers a seamless and efficient way to integrate MySQL databases in your projects. This driver handles MySQL's nuances and variants, freeing you to focus on building your application with confidence in stable and performant database interactions.
+
+### Why Choose the GORM MySQL Driver?
+- **Deep Compatibility with MySQL Versions and Variants**: Seamlessly adapts to different MySQL versions including MariaDB and TiDB, automatically configuring to supported features and limitations.
+- **Simplified and Flexible Configuration**: Easily tune driver behavior with customizable settings like connection strings, default string sizes, and datetime precision.
+- **Robust Schema Migration Support**: Automate column and index management with intelligent migrations that respect MySQL constraints and version capabilities.
+- **Accurate MySQL Error Translation**: Translates common MySQL errors to GORM native errors, helping you handle database exceptions gracefully.
+- **Optimized SQL Generation**: Generates MySQL-idiomatic SQL clauses and quoting, ensuring compatibility and preventing common syntax issues.
+
+### Best Suited For
+- Go developers building applications that require reliable, performant MySQL database integration.
+- Projects that use GORM ORM seeking a driver tailored to exploit MySQL specific functionalities.
+- Deployments targeting MySQL variants including MariaDB and TiDB that require adaptive support for feature differences.
+
+---
+
+## Understanding When and Why to Use This Driver
+
+### When to Use
+- **You are building Go applications that interact with MySQL databases** and want an idiomatic, fully supported Go ORM driver.
+- **Your project demands robust schema migration** with support for complex operations like index renaming, column alteration, and constraint management.
+- **You want automatic adaptation to different MySQL environments**, including MariaDB or TiDB, without manually adjusting your codebase.
+- **You require reliable error handling** that translates MySQL error codes to meaningful GORM errors for clearer exception flows.
+
+### Why It Matters
+Choosing the right driver impacts your development speed, system reliability, and maintainability. This driver is crafted to:
+
+- **Reduce friction** by abstracting MySQL version complexities.
+- **Prevent common pitfalls** with correct quoting and SQL clause generation.
+- **Ensure your app is future-proof**—supporting new MySQL features as they mature.
+
+---
+
+## Typical Use Cases and Deployment Scenarios
+
+### Use Case 1: Web Applications with MySQL Backend
+A developer building a REST API in Go needs to connect to MySQL for persistent storage. Using this driver, they can effortlessly connect to the database, perform CRUD operations, and leverage GORM's migrations to evolve the schema without writing raw SQL.
+
+### Use Case 2: Multi-Environment Deployment
+A startup deploys their service across multiple cloud providers where MySQL versions differ. This driver detects and configures the capabilities based on the server version at runtime, ensuring compatibility and consistent behavior.
+
+### Use Case 3: Handling Complex Schema Changes
+In a growing application, schema evolution requires adding indexes, renaming columns, or modifying constraints. The driver’s migrator intelligently handles these operations with fallbacks for older MySQL versions, mitigating downtime and data integrity issues.
+
+---
+
+## Configuration Flexibility That Fits Your Project
+
+Tailor the driver behavior to your project's requirements:
+
+```go
+import (
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+
+var datetimePrecision = 2
+
+db, err := gorm.Open(mysql.New(mysql.Config{
+  DSN: "gorm:gorm@tcp(localhost:9910)/gorm?charset=utf8&parseTime=True&loc=Local", // Connection string
+  DefaultStringSize: 256,                // Sets default string field size
+  DisableDatetimePrecision: true,        // Disable datetime fractional seconds if unsupported
+  DefaultDatetimePrecision: &datetimePrecision, // Set datetime precision when enabled
+  DontSupportRenameIndex: true,           // Use drop+create for index renaming on older MySQL
+  DontSupportRenameColumn: true,          // Use `CHANGE` instead of rename column on older MySQL
+  SkipInitializeWithVersion: false,       // Auto-detect version features
+}), &gorm.Config{})
+```
+
+This configuration highlights common adjustments for version compatibility and data type precision, letting you fine-tune performance and feature support.
+
+---
+
+## Real-World Outcomes
+
+| Without This Driver     | With GORM MySQL Driver                     |
+|-------------------------|--------------------------------------------|
+| Manual SQL management, prone to syntax errors and overlooked version differences | Smart SQL generation and quoting that adapts per MySQL version and variant
+| Migration scripts that require constant manual intervention | Declarative GORM migrations that handle complex schema changes smoothly
+| Generic or mismatched error codes leading to unclear debugging | Precise error translation converting MySQL error numbers to actionable GORM errors
+| Difficulty managing driver-level configurations | Clear, centralized configuration options for string sizes, datetime precision, and more
+
+---
+
+## Getting Started Preview
+
+Ready to integrate? Your journey begins with setting up the driver within your Go project, configuring a DSN (Data Source Name), and establishing your first GORM connection.
+
+### Prerequisites
+- Go environment installed and configured
+- MySQL or compatible MySQL variant running and accessible
+- Basic familiarity with GORM ORM concepts
+
+### Next Steps
+1. Explore the [Getting Started: Basic Configuration](../getting-started/configuration-first-run/basic-configuration) for detailed setup guidance.
+2. Proceed to [First Database Connection](../getting-started/configuration-first-run/first-connection) to see this driver in action.
+3. If you have custom MySQL setups, visit [Using a Customized MySQL Driver](../getting-started/configuration-first-run/custom-driver-usage).
+
+---
+
+## Practical Tips and Best Practices
+- Always specify your MySQL version or allow the driver to detect it for optimal feature utilization.
+- Use `DefaultStringSize` in your configuration to avoid unintended large text fields.
+- Disable datetime precision for compatibility with MySQL versions prior to 5.6.
+- When renaming indexes or columns, be mindful of underlying MySQL version support; the driver applies safe fallbacks.
+- Leverage GORM's error constants like `gorm.ErrDuplicatedKey` when handling database errors to write clear, maintainable code.
+
+## Troubleshooting Common Pitfalls
+<AccordionGroup title="Frequently Encountered Issues and Solutions">
+<Accordion title="Connection Fails Due to Misconfigured DSN">
+Ensure the DSN string follows the format supported by the underlying Go MySQL driver. Refer to https://github.com/go-sql-driver/mysql#dsn-data-source-name for details. Common mistakes include incorrect protocols, missing parameters, or typos.
+</Accordion>
+<Accordion title="Schema Migration Errors on Older MySQL Versions">
+Disable datetime precision or enable driver flags like `DontSupportRenameColumn` to allow the driver to adapt migrations safely for versions older than MySQL 5.7.
+</Accordion>
+<Accordion title="Unexpected SQL Syntax Errors">
+Verify driver version compatibility and quoting behavior—this driver manages identifier quoting but check for reserved keyword conflicts and naming conventions in your schema.
+</Accordion>
+</AccordionGroup>
