@@ -1,0 +1,221 @@
+---
+title: "Basic Configuration"
+description: "Explains how to configure the GORM MySQL Driver for various environments, including DSN structure, primary configuration options, and how each option influences driver behavior. Includes default recommendations for typical use cases."
+---
+
+# Basic Configuration Guide for GORM MySQL Driver
+
+This guide walks you through configuring the GORM MySQL Driver for various environments. You'll learn how to construct your Data Source Name (DSN), understand key configuration options, and apply recommended defaults that optimize driver behavior for typical use cases.
+
+---
+
+## 1. Understanding the DSN Format
+
+The DSN (Data Source Name) is the core connection string used to configure the MySQL driver. It follows the format defined by the underlying Go MySQL driver and includes credentials, network settings, and connection parameters.
+
+### Basic DSN Structure
+
+```plaintext
+user:password@protocol(address)/dbname?param1=value1&param2=value2
+```
+
+- **user:** Database username
+- **password:** Password for the database user
+- **protocol:** The connection protocol to use (`tcp`, `unix`, etc.)
+- **address:** The location of the database server (host:port)
+- **dbname:** The specific database to connect to
+- **params:** Additional configuration options such as charset, parsing behaviors, and time location
+
+### Example DSN
+
+```go
+dsn := "gorm:gorm@tcp(localhost:9910)/gorm?charset=utf8&parseTime=True&loc=Local"
+```
+
+This example connects as user `gorm` to the `gorm` database on `localhost` at port `9910`, using UTF-8 charset, enabling time parsing, with local timezone.
+
+### Recommended DSN Parameters
+
+- `charset=utf8mb4` for better Unicode support
+- `parseTime=True` to automatically convert `DATETIME`/`TIMESTAMP` SQL types to Go `time.Time`
+- `loc=Local` uses the local time zone for timestamps
+
+<Note>
+The DSN must conform exactly to the Go MySQL driver specification. Refer to its documentation for full DSN options: https://github.com/go-sql-driver/mysql#dsn-data-source-name
+</Note>
+
+---
+
+## 2. Primary Configuration Options
+
+The GORM MySQL Driver provides a `Config` struct allowing fine-tuning beyond the DSN. These options influence driver behavior, compatibility, and optimizations.
+
+```go
+import (
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+
+var datetimePrecision = 2
+
+db, err := gorm.Open(mysql.New(mysql.Config{
+  DSN: "gorm:gorm@tcp(localhost:9910)/gorm?charset=utf8&parseTime=True&loc=Local",
+  DefaultStringSize: 256,               // Default length for string fields
+  DisableDatetimePrecision: true,       // Turns off datetime precision support (helpful for MySQL <5.6)
+  DefaultDatetimePrecision: &datetimePrecision, // Sets precision for datetime fields
+  DontSupportRenameIndex: true,         // For older MySQL versions without rename index support
+  DontSupportRenameColumn: true,        // For MySQL versions that lack rename column support
+  SkipInitializeWithVersion: false,     // Auto-detects MySQL server version and adjusts driver settings
+}), &gorm.Config{})
+```
+
+### Explanation of Key Fields
+
+| Option                     | Description                                                                                                                                                            | Defaults / Notes                                                              |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| `DSN`                      | The connection string to the database, crucial for driver initialization.                                                                                            | Must be provided                                                              |
+| `DefaultStringSize`         | Sets default size for string fields that do not specify size and are not indexed or primary keys.                                                                     | Defaults to `0`, which means larger text types will be used                  |
+| `DisableDatetimePrecision`  | Disable support for datetime precision, useful for compatibility with MySQL versions older than 5.6                                                                   | Defaults to `false`                                                           |
+| `DefaultDatetimePrecision`  | Specifies precision to apply to datetime fields by default if precision is not specified in the model tags                                                         | Default is `3`                                                               |
+| `DontSupportRenameIndex`    | Enables compatibility mode for MySQL or MariaDB versions that do not support `RENAME INDEX` statements (pre-5.7).                                                    | `false` if auto-detected otherwise                                           |
+| `DontSupportRenameColumn`   | Uses `CHANGE` syntax instead of `RENAME COLUMN` for renaming, supporting MySQL versions before 8.0 and MariaDB                                                        | `false` if auto-detected otherwise                                           |
+| `SkipInitializeWithVersion` | When set, disables automatic detection of MySQL server version to skip applying version-based driver tweaks                                                        | `false` by default, recommended to leave at default for optimal compatibility |
+
+<Warning>
+Changing configuration options without understanding their impact may cause unexpected behavior or compatibility issues with your MySQL server version.
+</Warning>
+
+---
+
+## 3. How Configuration Options Influence Driver Behavior
+
+The driver intelligently applies behaviors based on the MySQL server version it detects during initialization (unless `SkipInitializeWithVersion` is `true`). These include:
+
+- **Index and Column Rename Support:** For older MySQL or MariaDB versions, the driver disables rename operations that are not supported. Instead, it falls back to safer operations like drop-and-create index.
+
+- **Datetime Precision:** Older MySQL versions prior to 5.6 do not support datetime precision, so precision can be disabled to avoid incompatibilities.
+
+- **`WITH RETURNING` Clause Support:** The driver enables support for `WITH RETURNING` clauses based on server capabilities to optimize CRUD operations.
+
+<Info>
+This adaptive behavior eliminates much manual compatibility tuning, ensuring the driver performs optimally on various MySQL and compatible servers such as MariaDB and TiDB.
+</Info>
+
+---
+
+## 4. Default Recommendations for Typical Use Cases
+
+When starting fresh, configuring the driver with these defaults provides a seamless experience:
+
+```go
+import (
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+
+// Use recommended DSN parameters for time parsing and charset
+dsn := "user:password@tcp(localhost:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
+
+// Use default Config with version detection enabled
+db, err := gorm.Open(mysql.New(mysql.Config{
+  DSN: dsn,
+}), &gorm.Config{})
+if err != nil {
+  panic("failed to connect database")
+}
+```
+
+This configuration covers supported MySQL versions 5.6 and later, including MariaDB and TiDB variants.
+
+<Check>
+- Use `utf8mb4` charset for full Unicode support.
+- Enable `parseTime=True` for easy time handling.
+- Rely on driver to auto-detect server version and toggle compatibility modes.
+</Check>
+
+---
+
+## 5. Practical Tips and Common Pitfalls
+
+- **Always verify your DSN:** Incorrect DSN parameters can cause connection failures or subtle bugs, especially with time zone handling.
+
+- **`SkipInitializeWithVersion = true` use case:** Only set this to true if you have a constrained environment where version querying is not possible. Otherwise, allow the driver to detect server version.
+
+- **Setting `DefaultStringSize`:** Leaving this as zero lets large text fields default to `longtext`, which can sometimes impact indexing. Define size explicitly or set a reasonable default if indexing is needed.
+
+- **Datetime precision precision:** If your application relies on higher precision timestamps, ensure your MySQL version supports it or disable precision accordingly.
+
+- **Compatibility with MariaDB/TiDB:** The driver applies known compatibility workarounds automatically, but always test schema migrations and index renames carefully on these platforms.
+
+---
+
+## 6. Summary Diagram of Configuration Flow
+
+```mermaid
+flowchart TD
+  A[Start: Define DSN] --> B{Prepare mysql.Config}
+  B -->|Use DSN with parameters| C[Parse DSN into mysql.Config]
+  C --> D{Provide mysql.Config to GORM mysql.Config}
+  D --> E{Skip Initialize with Version?}
+  E -->|No| F[Query Server Version 'SELECT VERSION()']
+  F --> G[Analyze version string]
+  G --> H[Set compatibility flags: RenameIndex, RenameColumn, DatetimePrecision]
+  E -->|Yes| I[Skip version detection, use provided config as-is]
+  H & I --> J[Register callbacks and clause builders]
+  J --> K[Driver initialized and ready]
+```
+
+---
+
+## 7. Verification & Troubleshooting
+
+### Verify Your Configuration
+
+After initializing GORM with the MySQL driver, ensure your connection and config are valid:
+
+```go
+if err != nil {
+    log.Fatalf("failed to connect database: %v", err)
+}
+
+sqlDB, err := db.DB()
+if err != nil {
+    log.Fatalf("failed to get sql DB from gorm: %v", err)
+}
+
+err = sqlDB.Ping()
+if err != nil {
+    log.Fatalf("ping database failed: %v", err)
+}
+
+log.Println("Database connection established and configuration is valid.")
+```
+
+### Common Issues & Solutions
+
+| Issue                                  | Cause                                                     | Solution                                                      |
+|----------------------------------------|-----------------------------------------------------------|---------------------------------------------------------------|
+| Connection fails with bad DSN          | Typo in DSN or wrong parameters                           | Double-check DSN format, credentials, host, port, and params  |
+| Time fields not parsed correctly        | `parseTime` parameter missing or false                    | Ensure `parseTime=True` in DSN                                |
+| Schema migration errors on index rename | Using older MySQL/MariaDB without rename support          | Use driver flags `DontSupportRenameIndex: true`               |
+| Unexpected datetime precision errors   | MySQL server version too old for precision support        | Disable datetime precision with `DisableDatetimePrecision`    |
+
+<Warning>
+If you encounter persistent issues related to server version features, explicitly set the driver config flags or consider upgrading your MySQL server.
+</Warning>
+
+---
+
+## 8. Additional Resources
+
+- [GORM MySQL Driver GitHub Repository](https://github.com/go-gorm/mysql)
+- [Go MySQL Driver DSN Documentation](https://github.com/go-sql-driver/mysql#dsn-data-source-name)
+- Related Docs:
+  - [Prerequisites](../prerequisites-installation/prerequisites)
+  - [Installation](../prerequisites-installation/installation)
+  - [First Database Connection](../configuration-first-run/first-connection)
+  - [Using a Customized MySQL Driver](../configuration-first-run/custom-driver-usage)
+
+---
+
+By following this configuration guide, you ensure that your GORM MySQL Driver setup is robust, compatible, and optimized for your environment, enabling you to focus on building your Go application with confidence.
