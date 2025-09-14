@@ -1,0 +1,122 @@
+---
+title: "Quick Validation Steps"
+description: "Instructs users on performing a simple validation to ensure the driver is correctly installed and configured, such as successfully running a migration or executing a test query. Includes sample commands and expected outputs."
+---
+
+### Quick Validation Steps for GORM MySQL Driver
+
+This guide helps you perform a straightforward validation of your GORM MySQL Driver installation and configuration. You will run a simple code snippet that executes a migration and a basic query to confirm the driver is functioning correctly with your MySQL database.
+
+---
+
+#### 1. Confirm Your Environment is Ready
+Before running any tests, ensure you have:
+
+- Installed the GORM MySQL Driver via Go modules.
+- A reachable MySQL database instance (MySQL 5.6+, MariaDB, or TiDB).
+- Proper DSN (Data Source Name) configured with appropriate credentials and connection parameters.
+
+You can review prerequisite and installation steps in the [Installation](./installation) and [Basic Configuration](./basic-configuration) guides.
+
+---
+
+#### 2. Prepare a Minimal Test Program
+Create a new Go file (e.g., `validation_test.go`) and use the following template to validate the driver:
+
+```go
+package main
+
+import (
+  "fmt"
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+
+// User represents a simple database model for testing migration
+type User struct {
+  ID   uint   `gorm:"primaryKey"`
+  Name string
+}
+
+func main() {
+  dsn := "gorm:gorm@tcp(localhost:9910)/gorm?charset=utf8&parseTime=True&loc=Local" // replace with your DSN
+  db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+  if err != nil {
+    panic(fmt.Sprintf("failed to connect database: %v", err))
+  }
+
+  // Run auto-migration for the User model
+  if err := db.AutoMigrate(&User{}); err != nil {
+    panic(fmt.Sprintf("migration failed: %v", err))
+  }
+
+  fmt.Println("Migration completed successfully.")
+
+  // Create a new user record
+  db.Create(&User{Name: "Test User"})
+
+  // Query the user back
+  var user User
+  if err := db.First(&user).Error; err != nil {
+    panic(fmt.Sprintf("query failed: %v", err))
+  }
+
+  fmt.Printf("User found: ID=%d, Name=%s\n", user.ID, user.Name)
+}
+```
+
+---
+
+#### 3. Run the Test Program
+
+Execute your test program:
+
+```bash
+go run validation_test.go
+```
+
+##### Expected Output:
+
+```text
+Migration completed successfully.
+User found: ID=1, Name=Test User
+```
+
+This output confirms:
+
+- The driver can open a valid connection using your DSN.
+- Migration commands are executed, creating the required tables.
+- Basic CRUD operations succeed.
+
+---
+
+#### 4. Troubleshooting Common Issues
+
+If you encounter errors:
+
+- **Connection Errors:** Verify your DSN syntax, ensure the MySQL server is running and accessible.
+- **Authentication Failures:** Confirm username, password, and privileges.
+- **Migration Errors:** Check MySQL version compatibility; review logs for missing permissions.
+- **Timeout or Network Issues:** Confirm network settings and firewall rules.
+
+Refer to the [Troubleshooting & Common Issues](./troubleshooting) page for detailed help.
+
+---
+
+#### 5. Next Steps
+
+After successful validation:
+
+- Proceed to explore more advanced configurations in the [Basic Configuration](./basic-configuration) guide.
+- Connect your actual application to the database using GORM MySQL driver.
+- For custom driver scenarios, see the [Using a Customized MySQL Driver](./custom-driver-usage) documentation.
+
+---
+
+<Check>
+Always ensure your DSN matches the MySQL driver standards: https://github.com/go-sql-driver/mysql#dsn-data-source-name
+</Check>
+
+<Info>
+By completing these validation steps, you ensure your environment is ready for seamless GORM MySQL driver usage.
+</Info>
