@@ -1,0 +1,198 @@
+---
+title: "Troubleshooting & Common Issues"
+description: "Covers frequent problems encountered during setup and first connection, such as DSN mistakes, network errors, authentication failures, or unsupported MySQL versions. Provides actionable tips and diagnostic steps."
+---
+
+# Troubleshooting & Common Issues
+
+This guide addresses the frequent problems users encounter when setting up and making the first connection with the GORM MySQL Driver. It delivers actionable solutions and diagnostic tips focused on typical error scenarios like DSN misconfiguration, network connectivity problems, authentication failures, and version compatibility issues.
+
+---
+
+## 1. Common DSN Mistakes and Resolutions
+
+The Data Source Name (DSN) is critical for establishing a connection to the MySQL server. Errors here often cause connection failures.
+
+### Symptoms
+- Connection errors mentioning invalid DSN format
+- Authentication failures despite correct user credentials
+- Unexpected timeout or refused connection errors
+
+### Diagnostic Steps
+1. Verify DSN structure matches [go-sql-driver/mysql DSN format](https://github.com/go-sql-driver/mysql#dsn-data-source-name).
+2. Check special characters in passwords or usernames are URL-encoded.
+3. Confirm host, port, and database name are correct and reachable.
+4. Ensure common DSN parameters like `charset=utf8`, `parseTime=True`, and `loc=Local` are included as recommended.
+
+### Best Practices
+- Wrap your DSN string in backticks or double quotes in code to avoid parsing issues.
+
+```go
+dsn := "gorm:gorm@tcp(localhost:9910)/gorm?charset=utf8&parseTime=True&loc=Local"
+db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+```
+
+- Always URL-encode any special symbols in credentials, for example, `@` becomes `%40`.
+
+### Example Correction
+```go
+// Incorrect DSN with unescaped '@' character
+dsn := "user:my@password@tcp(localhost:3306)/dbname"
+
+// Correct DSN with password URL encoded
+dsn := "user:my%40password@tcp(localhost:3306)/dbname"
+```
+
+---
+
+## 2. Network and Connectivity Issues
+
+Failing to reach the MySQL server often results from network or configuration problems.
+
+### Symptoms
+- Error: dial tcp timeout or connection refused
+- Cannot ping or telnet to MySQL host and port
+
+### Troubleshooting Steps
+1. Test network access to MySQL server:
+   ```bash
+   ping localhost
+   telnet localhost 9910
+   ```
+2. Check firewall rules to ensure the MySQL port is not blocked.
+3. Confirm MySQL server is running and listening on the correct port.
+4. Verify `skip-networking` is not enabled in MySQL server (which disables TCP/IP connections).
+
+### Tips
+- Use IP address instead of hostname to bypass DNS issues.
+- Ensure your Go application and MySQL server are on the same network or VPN.
+
+---
+
+## 3. Authentication Failures
+
+Authentication errors can arise despite valid credentials due to user privileges or MySQL server settings.
+
+### Symptoms
+- Error: Access denied for user 'username'@'host'
+
+### Actions
+1. Double-check username and password correctness.
+2. Confirm the MySQL user has privileges to connect from your application's host.
+3. In MySQL, run:
+  ```sql
+  SELECT user, host FROM mysql.user WHERE user = 'your_user';
+  ```
+4. Grant access if needed:
+  ```sql
+  GRANT ALL PRIVILEGES ON database_name.* TO 'your_user'@'%' IDENTIFIED BY 'password';
+  FLUSH PRIVILEGES;
+  ```
+5. Check authentication plugin compatibility; some MySQL servers default to `caching_sha2_password` which might not be supported.
+
+---
+
+## 4. Unsupported or Incompatible MySQL Server Versions
+
+The driver detects the MySQL server version to optimize compatibility.
+
+### Problems
+- Errors related to unsupported syntax or features
+- Warnings when migrating schemas or renaming columns/indexes
+
+### Guidance
+1. The driver supports MySQL 5.6+ and compatible variants such as MariaDB and TiDB.
+2. Certain features like rename column or index may use fallback strategies on older versions (e.g., drop and recreate).
+3. The server version is automatically queried on initialization, but you can disable version checks by setting `SkipInitializeWithVersion=true` in the driver config if needed.
+
+```go
+db, err := gorm.Open(mysql.New(mysql.Config{
+  DSN:  dsn,
+  SkipInitializeWithVersion: true,
+}), &gorm.Config{})
+```
+
+4. Refer to the [Version Compatibility section](https://github.com/go-gorm/mysql#compatibility) for detailed behaviors per MySQL version.
+
+---
+
+## 5. Handling Specific Driver Errors
+
+The driver translates some MySQL server errors to GORM errors for convenience.
+
+| MySQL Error Code | GORM Error                  | Description                    |
+| ---------------- | -------------------------- | ------------------------------ |
+| 1062             | `gorm.ErrDuplicatedKey`    | Duplicate key or unique error  |
+| 1451, 1452       | `gorm.ErrForeignKeyViolated` | Foreign key constraint failure |
+
+### Example Error Handling
+```go
+if errors.Is(err, gorm.ErrDuplicatedKey) {
+    fmt.Println("Duplicate record found.")
+}
+```
+
+---
+
+## 6. Troubleshooting Checklist
+
+Use this checklist to quickly isolate common issues:
+
+- [ ] Is your DSN string correct and fully URL-encoded?
+- [ ] Is the MySQL server running and accessible on your network?
+- [ ] Are credentials valid, and does the user have sufficient privileges?
+- [ ] Is your MySQL server version supported and recognized by the driver?
+- [ ] Are you handling specific MySQL errors gracefully in your Go code?
+
+---
+
+## 7. Additional Diagnostic Tips
+
+- Enable Go application's debug or verbose logging to observe connection attempts.
+- Use `ping` and `exec.Raw` commands in GORM to verify connection manually.
+
+```go
+sqlDB, err := db.DB()
+if err == nil {
+  err := sqlDB.Ping()
+  if err != nil {
+    fmt.Println("Ping failed:", err)
+  }
+}
+```
+
+- Wrap imports carefully to avoid driver registration issues when using customized drivers.
+
+---
+
+## 8. Getting Additional Support
+
+If problems persist:
+- Consult the [GORM MySQL Driver GitHub Issues](https://github.com/go-gorm/mysql/issues).
+- Review [GORM official documentation](https://gorm.io).
+- Reach out to community forums or Stack Overflow with detailed error logs and environment details.
+
+---
+
+For detailed prerequisites, installation, and configuration, see:
+- [Prerequisites & Installation](../prerequisites-installation/prerequisites)
+- [Installation Guide](../prerequisites-installation/installation)
+- [Basic Configuration](../configuration-first-run/basic-configuration)
+- [First Database Connection](../configuration-first-run/first-connection)
+
+
+---
+
+_This page is part of the Getting Started > Configuration & First Connection series._
+
+
+---
+
+<Check>
+Ensure you validate your DSN format and test basic connectivity before escalating to deep troubleshooting steps.
+Use the actionable tips here to diagnose and fix the most common startup issues quickly.
+</Check>
+
+<Info>
+For custom driver integration and advanced usage, refer to the [Custom Driver Usage guide](../configuration-first-run/custom-driver-usage).
+</Info>

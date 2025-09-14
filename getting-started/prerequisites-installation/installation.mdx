@@ -1,0 +1,157 @@
+---
+title: "Installation"
+description: "Step-by-step guide for installing the GORM MySQL Driver using Go modules, covering single-platform and multi-platform environments. Outlines the module import paths, example commands, and how to verify a successful installation."
+---
+
+# Installation Guide for GORM MySQL Driver
+
+This guide walks you through the process of installing the GORM MySQL Driver using Go modules. Whether you are setting up on a single platform or managing multi-platform development environments, follow these steps to get the driver ready for your Go applications.
+
+---
+
+## 1. Prerequisites
+
+Before starting the installation, ensure the following prerequisites are met:
+
+- **Go version**: 1.15 or higher is required to use Go modules effectively.
+- **MySQL Server**: Ensure your MySQL server is version 5.6 or newer (including MariaDB and TiDB variants).
+- **Network Access**: Your development machine should be able to reach the MySQL server.
+
+If you haven't already validated your environment, see the [Prerequisites](https://gorm.io/docs/getting-started/prerequisites-installation/prerequisites) page for detailed requirements.
+
+---
+
+## 2. Installing the GORM MySQL Driver
+
+### 2.1 Single-Platform Installation
+
+If you are working on a single platform (e.g., Linux, macOS, or Windows), installing the GORM MySQL Driver is straightforward.
+
+Open your terminal at your Go project root and run:
+
+```bash
+go get gorm.io/driver/mysql
+```
+
+This command fetches the latest compatible version of the driver and adds it to your project's `go.mod` file.
+
+### 2.2 Multi-Platform Environment Setup
+
+For multi-platform development (cross-compiling or sharing code across various OS/architectures), the above single command will still suffice because Go modules handle dependencies across platforms. Just ensure your `go.mod` file is committed and consistent across environments.
+
+---
+
+## 3. Importing and Verifying Installation
+
+Once installed, update your Go code to import the driver alongside GORM.
+
+Example: 
+
+```go
+import (
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+
+func main() {
+  dsn := "user:password@tcp(localhost:3306)/dbname?charset=utf8&parseTime=True&loc=Local"
+
+  db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+  if err != nil {
+    panic("failed to connect database")
+  }
+  // Use db for operations
+}
+```
+
+Here, the `mysql.Open(dsn)` initializes the MySQL driver with your data source name (DSN).
+
+### DSN Format Reminder
+
+Your DSN must follow the format specified by the underlying Go MySQL driver, for example:
+
+```text
+user:password@tcp(host:port)/dbname?charset=utf8&parseTime=True&loc=Local
+```
+
+Refer to https://github.com/go-sql-driver/mysql#dsn-data-source-name for detailed DSN configurations.
+
+---
+
+## 4. Confirming Successful Installation
+
+To verify the driver installed correctly and can connect to your MySQL database:
+
+1. Run your application containing the example code above.
+2. Ensure no errors occur connecting to the database.
+3. Optionally, perform a simple query or ping check:
+
+```go
+sqlDB, err := db.DB()
+if err != nil {
+  panic(err)
+}
+if err := sqlDB.Ping(); err != nil {
+  panic(err)
+}
+```
+
+If no panic occurs, the installation and basic connectivity are successful.
+
+### Troubleshooting
+
+- **Error importing `gorm.io/driver/mysql`**: Run `go mod tidy` to clean up dependencies.
+- **Connection refused or timeout**: Check MySQL server availability and network settings.
+- **Go version issues**: Verify your Go version is 1.15+ by running `go version`.
+
+For more troubleshooting tips, consult the [Troubleshooting & Common Issues](https://gorm.io/docs/getting-started/configuration-first-run/troubleshooting) documentation.
+
+---
+
+## 5. Additional Installation Tips
+
+- **Custom Driver Name**: If you want to use a custom MySQL driver (e.g., a variant or fork), configure it with the `DriverName` field in the `mysql.Config` struct and pass it to `mysql.New()`.
+
+Example:
+
+```go
+import (
+  _ "example.com/my_mysql_driver"
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+
+config := mysql.Config{
+  DriverName: "my_mysql_driver_name",
+  DSN:       "user:pass@tcp(localhost:3306)/dbname?charset=utf8&parseTime=True&loc=Local",
+}
+
+db, err := gorm.Open(mysql.New(config), &gorm.Config{})
+```
+
+- **Version-Specific Flags**: The driver auto-detects your MySQL (or compatible) version and adjusts its behavior to match features and limitations.
+
+- **Go Modules Best Practice**: Always keep your Go modules updated with `go get -u` to benefit from the latest fixes.
+
+---
+
+## 6. Next Steps
+
+After successful installation, proceed to:
+
+- Configure your connection options and schema mappings on the [Basic Configuration](https://gorm.io/docs/getting-started/configuration-first-run/basic-configuration) page.
+- Establish your first database connection and run queries via the [First Database Connection](https://gorm.io/docs/getting-started/configuration-first-run/first-connection) guide.
+
+---
+
+## References
+
+- [GORM Official Website](https://gorm.io)
+- [Go MySQL Driver DSN Reference](https://github.com/go-sql-driver/mysql#dsn-data-source-name)
+- [GORM MySQL Driver GitHub Repository](https://github.com/go-gorm/mysql)
+
+---
+
+This completes the GORM MySQL Driver installation instructions for Go projects.
+
+

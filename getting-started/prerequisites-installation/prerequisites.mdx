@@ -1,0 +1,166 @@
+---
+title: "Prerequisites"
+description: "Lists the required software and dependencies to use the GORM MySQL Driver, such as supported Go versions, MySQL server requirements, and any necessary network or environment configuration. Includes links to third-party dependencies like the go-sql-driver/mysql library."
+---
+
+# Prerequisites for Using the GORM MySQL Driver
+
+This page outlines all necessary software, system requirements, and configurations you must have before successfully using the GORM MySQL Driver. Preparing your environment properly ensures seamless installation, configuration, and a smooth first experience connecting your Go applications to MySQL databases via GORM.
+
+---
+
+## 1. Supported Go Versions
+
+Ensure your development environment uses one of the supported Go versions compatible with the GORM MySQL Driver:
+
+- GORM and the MySQL driver require Go version **1.15** or higher.
+- Using a supported Go version ensures compatibility with dependencies and the latest driver features.
+
+<Tip>
+Use `go version` in your terminal to verify your installed Go version before proceeding.
+</Tip>
+
+## 2. MySQL Server Requirements
+
+The GORM MySQL Driver supports multiple MySQL server variants with some version-specific behaviors and features:
+
+- **MySQL Server:**
+  - Supported versions start from **MySQL 5.6** and above.
+  - Features such as `DATETIME` precision and `RENAME` operations vary based on the version.
+
+- **MariaDB:**
+  - Supported, but note some limitations around index and column renaming.
+  - In MariaDB environments, certain features like `RENAME COLUMN` and `RENAME INDEX` are disabled and handled with fallback logic.
+
+- **TiDB:**
+  - Fully supported, with specific settings accounted for in feature support.
+
+<Tip>
+You can query your MySQL server version using:
+
+```sql
+SELECT VERSION();
+```
+
+This helps confirm compatibility and informs driver behavior.
+</Tip>
+
+## 3. Network and Environment Configuration
+
+To establish successful connections, consider the following requirements:
+
+- **Network Access:** Ensure your Go application can access the MySQL server on the correct TCP/IP address and port.
+
+- **Firewall and Ports:** Open the MySQL default port **3306** (or your configured port) in your firewall for inbound/outbound traffic as necessary.
+
+- **DSN (Data Source Name) Configuration:** The DSN must follow the format supported by the underlying [go-sql-driver/mysql](https://github.com/go-sql-driver/mysql#dsn-data-source-name) library. A typical DSN looks like:
+
+  ```none
+  username:password@tcp(host:3306)/dbname?charset=utf8&parseTime=True&loc=Local
+  ```
+
+- Ensure any required parameters such as `charset`, `parseTime`, and `loc` are properly set for your use case.
+
+## 4. Required Third-Party Dependencies
+
+The GORM MySQL Driver depends on the following key packages:
+
+- **gorm.io/gorm:** The main GORM ORM library for Go.
+- **github.com/go-sql-driver/mysql:** The official MySQL driver for Go.
+
+These dependencies are automatically managed by Go modules. When you run `go get gorm.io/driver/mysql`, the required dependencies will be downloaded and installed.
+
+## 5. System Requirements
+
+Below are the minimal hardware and OS requirements for development and runtime:
+
+| Requirement         | Specification                             |
+|---------------------|------------------------------------------|
+| Operating System    | Linux, macOS, Windows (any with Go support) |
+| Go Version          | 1.15 or newer                            |
+| Disk Space          | At least 100MB free for Go and dependencies |
+| Memory              | Minimum 512MB RAM; more recommended for production  |
+
+<Tip>
+The GORM MySQL Driver works across platforms supported by Go, providing flexibility in your development environment.
+</Tip>
+
+## 6. User Privileges & Database Permissions
+
+Make sure the MySQL user connecting through GORM has adequate permissions:
+
+- Access to the desired database/schema.
+- Sufficient rights for schema migrations if used (e.g., `CREATE`, `ALTER`, `DROP` on tables).
+- Proper privileges for data operations like `SELECT`, `INSERT`, `UPDATE`, and `DELETE`.
+
+<Warning>
+Lack of necessary privileges may result in connection or migration errors.
+</Warning>
+
+## 7. Summary of Prerequisites Checklist
+
+<Check>
+- Go 1.15+ installed and confirmed via `go version`.
+- MySQL server 5.6 or higher, MariaDB/TiDB compatibility noted.
+- MySQL server accessible on network and proper port is open.
+- Valid DSN string formatted according to [go-sql-driver/mysql](https://github.com/go-sql-driver/mysql#dsn-data-source-name).
+- Required third-party dependencies installed via Go modules.
+- MySQL user has necessary privileges for intended operations.
+- Adequate system resources to run your Go application with the MySQL driver.
+</Check>
+
+## 8. Next Steps
+
+Once all prerequisites are met:
+
+1. Proceed to the [Installation Guide](/getting-started/prerequisites-installation/installation) to install the GORM MySQL Driver.
+2. Follow the setup for [Basic Configuration](/getting-started/configuration-first-run/basic-configuration) to configure your connection.
+3. Establish your [First Database Connection](/getting-started/configuration-first-run/first-connection) with practical examples.
+
+
+---
+
+## Additional Resources
+
+- [DSN (Data Source Name) Details - go-sql-driver/mysql](https://github.com/go-sql-driver/mysql#dsn-data-source-name)
+- [GORM Official Website](https://gorm.io)
+- [GORM MySQL Driver GitHub Repository](https://github.com/go-gorm/mysql)
+
+
+---
+
+<Info>
+For detailed compatibility and integration nuances, see the [Integration & Compatibility](../overview/features-architecture-integration/integration-and-compatibility) documentation.
+</Info>
+
+---
+
+## Troubleshooting Common Prerequisite Issues
+
+<AccordionGroup title="Common Setup Issues and Remedies">
+<Accordion title="Go version not supported">
+Make sure your installed Go version is 1.15 or newer. Download the latest Go from the official site: https://golang.org/dl/.
+</Accordion>
+<Accordion title="Unable to connect to MySQL server">
+- Verify network connectivity to the MySQL server.
+- Check firewall and port accessibility.
+- Confirm DSN details including host, port, username, and password.
+- Test connection using the MySQL client or `telnet host port`.
+</Accordion>
+<Accordion title="Insufficient MySQL user privileges">
+Ensure the MySQL user has required privileges, especially if using migration features.
+Use commands like `SHOW GRANTS FOR 'username'@'host';` to check.
+</Accordion>
+<Accordion title="DSN formatting errors">
+Keep your DSN consistent with go-sql-driver/mysql syntax. Incorrect query parameters can cause connection errors.
+Refer to https://github.com/go-sql-driver/mysql#dsn-data-source-name for exact details.
+</Accordion>
+</AccordionGroup>
+
+---
+
+By ensuring these prerequisites, you’ll be fully prepared to leverage the GORM MySQL Driver effectively in your Go applications.
+
+
+---
+
