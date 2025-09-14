@@ -1,0 +1,75 @@
+{
+  "background": {
+    "decoration": "gradient"
+  },
+  "colors": {
+    "dark": "#1E3A8A",
+    "light": "#60A5FA",
+    "primary": "#60A5FA"
+  },
+  "favicon": "/favicon.svg",
+  "fonts": {
+    "family": "Montserrat",
+    "format": "woff2",
+    "source": "https://fonts.gstatic.com/s/googlesansflex/v5/t5sJIQcYNIWbFgDgAAzZ34auoVyXkJCOvp3SFWJbN5hF8Ju1x6sKCyp0l9sI40swNJwGpVd4AZzz0v6lJ4qFXNZhGjLvDSkV4USKMo6qQzwliVdHAy9jxTDHg_ugnAakpwGc-cxgUqDCIUI.woff2"
+  },
+  "icons": {
+    "library": "fontawesome"
+  },
+  "logo": {
+    "dark": "./logo/logo.svg",
+    "light": "./logo/logo.svg"
+  },
+  "name": "GORM MySQL Driver",
+  "navigation": {
+    "tabs": [
+      {
+        "groups": [
+          {
+            "group": "Product Introduction \u0026 Core Concepts",
+            "pages": [
+              "overview/introduction-core-concepts/what-is-gorm-mysql-driver",
+              "overview/introduction-core-concepts/value-proposition-use-cases",
+              "overview/introduction-core-concepts/core-concepts-terminology"
+            ]
+          },
+          {
+            "group": "Features, Architecture \u0026 Integration",
+            "pages": [
+              "overview/features-architecture-integration/feature-highlights",
+              "overview/features-architecture-integration/system-architecture-overview",
+              "overview/features-architecture-integration/integration-and-compatibility"
+            ]
+          }
+        ],
+        "tab": "Overview"
+      },
+      {
+        "groups": [
+          {
+            "group": "Setup \u0026 Installation",
+            "pages": [
+              "getting-started/prerequisites-installation/prerequisites",
+              "getting-started/prerequisites-installation/installation"
+            ]
+          },
+          {
+            "group": "Configuration \u0026 First Connection",
+            "pages": [
+              "getting-started/configuration-first-run/basic-configuration",
+              "getting-started/configuration-first-run/first-connection",
+              "getting-started/configuration-first-run/custom-driver-usage",
+              "getting-started/configuration-first-run/troubleshooting",
+              "getting-started/configuration-first-run/quick-validation"
+            ]
+          }
+        ],
+        "tab": "Getting Started"
+      }
+    ]
+  },
+  "styling": {
+    "codeblocks": "dark",
+    "eyebrows": "breadcrumbs"
+  }
+}
