@@ -1,0 +1,174 @@
+---
+title: "Using a Customized MySQL Driver"
+description: "Describes how to integrate a custom MySQL driver with GORM, including registering the custom driver and specifying its name in configuration. Emphasizes common reasons for using a custom driver and how to validate the integration."
+---
+
+# Using a Customized MySQL Driver
+
+Integrating a custom MySQL driver with GORM enables you to leverage specialized driver implementations tailored to your needs, whether for enhanced performance, additional features, or integration with specific MySQL variants. This guide walks you through registering your custom MySQL driver with GORM and configuring it for use in your application.
+
+---
+
+## Why Use a Customized MySQL Driver?
+
+While the default GORM MySQL driver works seamlessly for most use cases, custom drivers are often needed to:
+
+- Support proprietary MySQL forks or modified behaviors
+- Extend or modify driver capabilities for specific features
+- Integrate specialized connection pooling or monitoring
+- Customize DSN parsing or connection setup
+
+By integrating your own driver, you maintain all core GORM benefits while tailoring the MySQL connection to your environment.
+
+---
+
+## Step 1: Register Your Custom MySQL Driver
+
+Before GORM can use your custom driver, you must ensure it is properly registered with Go's `database/sql` package under a unique driver name.
+
+Typically, your custom driver package performs this by calling `sql.Register(driverName, driver)`. Example:
+
+```go
+import (
+    "database/sql"
+    "github.com/your_org/my_mysql_driver" // registers as "my_mysql_driver_name"
+    _ "github.com/your_org/my_mysql_driver"
+)
+```
+
+Be sure that:
+
+- Your custom driver implements the standard `database/sql/driver.Driver` interface.
+- The registration includes a unique driver name (e.g., `my_mysql_driver_name`) to avoid conflicts.
+
+
+---
+
+## Step 2: Import Required Packages in Your Application
+
+To use GORM with your custom MySQL driver, import both your custom driver package and the GORM MySQL driver:
+
+```go
+import (
+  _ "example.com/my_mysql_driver" // Custom driver imported for registration
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+```
+
+The underscore import ensures your driver registers itself without direct reference.
+
+---
+
+## Step 3: Configure GORM to Use the Custom Driver
+
+When opening a connection with GORM, specify your custom driver's name via `mysql.Config.DriverName`. This overrides the default "mysql" driver.
+
+Here is how to configure GORM with your custom driver:
+
+```go
+import (
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+
+config := mysql.Config{
+  DriverName: "my_mysql_driver_name", // Use the name your driver was registered with
+  DSN:       "gorm:gorm@tcp(localhost:9910)/gorm?charset=utf8&parseTime=True&loc=Local", // Your DSN
+}
+
+db, err := gorm.Open(mysql.New(config), &gorm.Config{})
+if err != nil {
+  panic(err) // Handle error appropriately
+}
+
+// db is now using your custom MySQL driver underneath
+```
+
+**Key points:**
+- `DriverName` must exactly match the registered name of your custom driver.
+- Ensure the DSN string follows the format supported by your driver.
+
+---
+
+## Step 4: Validate Your Integration
+
+After setup, confirm that GORM is using your custom driver correctly.
+
+### Simple Validation Steps:
+
+1. **Successful Connection**:
+
+   - Your `gorm.Open` call should not return an error.
+   - No panics or unexpected driver errors related to driver name or DSN.
+
+2. **Run a Basic Query**:
+
+```go
+var result int64
+if err := db.Raw("SELECT 1").Scan(&result).Error; err != nil {
+  panic("Query execution failed: " + err.Error())
+}
+if result == 1 {
+  fmt.Println("Custom MySQL driver is working correctly")
+}
+```
+
+3. **Check Error Types**:
+
+   - Confirm error translation and handling work as expected with your driver.
+
+4. **Monitor Logs** (if applicable):
+
+   - Depending on your driver's features, validate logs, connection handling, or additional instrumentation.
+
+---
+
+## Troubleshooting Common Issues
+
+<AccordionGroup title="Troubleshooting Common Problems">
+<Accordion title="Error: Unknown driver 'my_mysql_driver_name'">
+Verify your custom driver package is imported with an underscore (`_`) in your main application to trigger registration. Confirm the driver name matches exactly.
+</Accordion>
+<Accordion title="DSN format issues">
+Ensure your DSN string follows the driver-specific expected format. Consult your custom driver's documentation for any differences from standard MySQL DSN syntax.
+</Accordion>
+<Accordion title="Failed to open connection">
+Check network connectivity to your MySQL server. Validate credentials and DSN correctness. Confirm driver dependencies are met.
+</Accordion>
+<Accordion title="Unexpected errors during queries">
+If custom driver behavior diverges from standard MySQL behavior, review your driver's logging or debug output. Test queries against standard MySQL to isolate.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Best Practices and Tips
+
+- Namespace your custom driver name to avoid conflict (e.g., prefix with your organization or project).
+- Retain compatibility with the `github.com/go-sql-driver/mysql` DSN wherever possible for ease of use.
+- Leverage GORM's standard configuration options in parallel to custom driver settings.
+- Use the `SkipInitializeWithVersion` flag cautiously if your driver handles version-specific behavior.
+- Always test custom driver functionality independently before integration.
+
+---
+
+## Additional Resources
+
+- Official GORM MySQL Driver Repository: [https://github.com/go-gorm/mysql](https://github.com/go-gorm/mysql)
+- GORM Documentation: [https://gorm.io](https://gorm.io)
+- Go `database/sql` Package: https://pkg.go.dev/database/sql
+
+---
+
+By following these steps, you can seamlessly integrate and operate a customized MySQL driver within your GORM-powered Go applications, extending flexibility and allowing tailored database interactions.
+
+---
+
+<Check>
+Remember: The driver name supplied in your configuration (`DriverName`) must exactly match the registered name in your custom driver's initialization. Mismatches here are the most common cause of integration failures.
+</Check>
+
+<Note>
+For detailed implementation specifics of your custom driver, refer to your driver's own documentation and source code, as GORM interacts through the standard database/sql interfaces.
+</Note>
