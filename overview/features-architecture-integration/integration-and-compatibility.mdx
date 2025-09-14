@@ -1,0 +1,199 @@
+---
+title: "Integration & Compatibility"
+description: "Explains how the GORM MySQL Driver integrates with other systems—especially GORM and go-sql-driver/mysql. Includes notes on supported MySQL server versions, compatibility flags, and how to customize or extend the underlying driver."
+---
+
+# Integration & Compatibility
+
+## Seamless Integration with GORM and go-sql-driver/mysql
+
+The GORM MySQL Driver acts as a vital connector between GORM's ORM layer and MySQL databases by leveraging the popular and robust `go-sql-driver/mysql` package under the hood. This driver is designed specifically to bridge GORM’s high-level abstractions with the intricacies of MySQL, providing a version-aware, optimized, and customizable experience tailored for Go developers.
+
+At its core, the driver wraps `go-sql-driver/mysql`'s capabilities while adding enhanced features such as schema migrations, intelligent error translation, and comprehensive compatibility handling to ensure your Go applications interact smoothly with MySQL.
+
+### Why Integration Matters
+
+By tightly integrating with both GORM and the underlying MySQL driver, this dialector ensures:
+
+- **Smooth and predictable migrations:** Schema changes are managed with MySQL’s nuances in mind.
+- **Effective version detection:** It adapts behavior based on the connected MySQL or MariaDB server version.
+- **Consistent error handling:** Translate native MySQL errors into GORM error types for standard error management.
+- **Optimized SQL generation:** It builds MySQL-specific clauses that align with the database's supported syntax.
+
+
+## Supported MySQL Versions and Compatibility Flags
+
+The driver dynamically detects the MySQL server version at runtime and adjusts its behavior to maintain compatibility across different MySQL & fork versions such as MariaDB and TiDB.
+
+### Version Detection & Adaptation
+
+When initializing a database connection, the driver automatically queries the server version string and configures itself accordingly:
+
+- For **MariaDB**, certain features like renaming indexes or columns, some clauses, and default null handling are disabled because MariaDB does not fully support these MySQL features.
+- For **MySQL 5.6 and 5.7**, the driver disables or modifies handling for features like datetime precision, index renaming, column renaming, and constraint dropping – as those features were either unsupported or partially supported in these versions.
+- For **TiDB**, additional flags disable handling of unique column renaming due to its specific implementation.
+
+### Key Compatibility Flags Explained
+
+- **DontSupportRenameIndex:** When enabled, index renaming operations are emulated by dropping and recreating indexes, which aligns with older MySQL or MariaDB versions.
+- **DontSupportRenameColumn:** Alters column renaming operations to use `CHANGE` syntax instead of `RENAME` for better compatibility.
+- **DontSupportForShareClause:** Translates or removes unsupported row-locking clauses.
+- **DontSupportDropConstraint:** Adjusts how constraints are dropped on servers that do not support certain syntax variations.
+- **DontSupportNullAsDefaultValue:** Ensures consistent handling of columns defaulting to NULL, especially in MariaDB.
+- **DisableDatetimePrecision:** Turns off datetime fractional precision support on versions prior to 5.6.
+
+These flags are automatically set based on the detected server version but can also be overridden manually if needed, giving you control to finely tune compatibility.
+
+
+## Customizing and Extending the Underlying Driver
+
+While this driver uses `go-sql-driver/mysql` as the default backend, it allows users to specify a custom MySQL driver via configuration:
+
+```go
+import (
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+
+db, err := gorm.Open(mysql.New(mysql.Config{
+  DriverName: "my_custom_mysql_driver",
+  DSN:       "gorm:gorm@tcp(localhost:9910)/gorm?charset=utf8&parseTime=True&loc=Local",
+}), &gorm.Config{})
+```
+
+This flexibility enables compatibility with forks, specialized MySQL variants, or drivers that provide extended features beyond the classic `go-sql-driver/mysql`.
+
+### When to Customize Your Driver
+
+- You require advanced connection options or extensions unsupported by `go-sql-driver/mysql`.
+- Your environment demands an alternative MySQL-compatible driver.
+- You want to integrate vendor-specific enhancements without modifying GORM or the default driver.
+
+
+## Practical Examples & User Flow
+
+### Connecting with Default Driver
+
+```go
+import (
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+
+dsn := "gorm:gorm@tcp(localhost:9910)/gorm?charset=utf8&parseTime=True&loc=Local"
+db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+if err != nil {
+  panic(err)
+}
+```
+This simple example connects to a MySQL 8.x+ or compatible server with default precision and feature support.
+
+
+### Handling Compatibility for Older Servers
+
+If you work with older versions, the driver automatically configures feature flags but you can explicitly pass options:
+
+```go
+import (
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+
+config := mysql.Config{
+  DSN:                   dsn,
+  DontSupportRenameIndex: true,  // Recommended for MySQL < 5.7 or MariaDB
+  DisableDatetimePrecision: true,  // Recommended for MySQL < 5.6
+}
+
+db, err := gorm.Open(mysql.New(config), &gorm.Config{})
+if err != nil {
+  panic(err)
+}
+```
+
+
+### Error Translation in Action
+
+GORM MySQL Driver transparently translates MySQL error codes into standardized GORM errors, so you can handle errors intuitively:
+
+```go
+tx := db.Create(&user)
+if err := tx.Error; err != nil {
+  if errors.Is(err, gorm.ErrDuplicatedKey) {
+    fmt.Println("Duplicate entry error")
+  } else {
+    fmt.Println("Other error", err)
+  }
+}
+```
+
+This avoids manually checking MySQL error codes and provides consistency across different databases.
+
+
+## Best Practices for Success
+
+- **Leverage automatic version detection:** Avoid manual flag overrides unless you face specific compatibility issues.
+- **Prefer using DSN for configuration:** The driver parses options from DSN strings per `go-sql-driver/mysql` conventions to remain consistent.
+- **Adjust flags for forks carefully:** Some MySQL variants like TiDB or MariaDB need override flags for full compatibility.
+- **Use custom drivers only when necessary:** Maintain simplicity by relying on `go-sql-driver/mysql` unless extended features are required.
+
+
+## Troubleshooting Common Issues
+
+<AccordionGroup title="Common Troubleshooting Questions">
+<Accordion title="Why does column renaming fail on MariaDB or MySQL 5.6?">
+
+These versions don’t support native column rename commands. The driver emulates renaming via `CHANGE` syntax. Enable the `DontSupportRenameColumn` flag to handle this.
+
+</Accordion>
+<Accordion title="How do I handle errors like duplicate keys efficiently?">
+
+GORM MySQL Driver automatically translates errors with codes 1062 (duplicate key) and 1451/1452 (foreign key violations) into GORM-error types, so you can check with `errors.Is()`.
+
+</Accordion>
+<Accordion title="What if my MySQL version is not correctly detected?">
+
+Check your connection’s permissions to run `SELECT VERSION()`. If detection fails, consider setting `SkipInitializeWithVersion: true` and manually set compatibility flags.
+
+</Accordion>
+</AccordionGroup>
+
+
+## Summary
+
+The Integration & Compatibility page explains how the GORM MySQL Driver blends the functionality of GORM and the `go-sql-driver/mysql`, ensuring smooth, version-aware operation tailored to your MySQL environment. It highlights automatic version detection, compatibility flags, driver customization options, and practical guidance to help you integrate confidently and efficiently.
+
+---
+
+## Related Documentation
+
+- [What is the GORM MySQL Driver?](/overview/introduction-core-concepts/what-is-gorm-mysql-driver)
+- [Feature Highlights](/overview/features-architecture-integration/feature-highlights)
+- [System Architecture Overview](/overview/features-architecture-integration/system-architecture-overview)
+- [Basic Configuration](/getting-started/configuration-first-run/basic-configuration)
+- [Using a Customized MySQL Driver](/getting-started/configuration-first-run/custom-driver-usage)
+- [Troubleshooting & Common Issues](/getting-started/configuration-first-run/troubleshooting)
+
+
+---
+
+## Code and Resources
+
+The driver source is available at [https://github.com/go-gorm/mysql](https://github.com/go-gorm/mysql).
+
+Explore key source files for integration internals:
+
+- `mysql.go` – Core driver implementation and version handling
+- `error_translator.go` – MySQL to GORM error mapping
+- `migrator.go` – Schema migration logic tailored for MySQL
+
+
+---
+
+## Next Steps
+
+Start with the [Prerequisites](/getting-started/prerequisites-installation/prerequisites) and [Installation](/getting-started/prerequisites-installation/installation) guides to get your environment set up. Then, move to [Basic Configuration] to configure your driver and database connections correctly.
+
+If you need custom behaviors or are working with a specialized MySQL driver, explore [Using a Customized MySQL Driver].
+
+For a deeper understanding of internal workflows, consult the [System Architecture Overview].
